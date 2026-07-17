@@ -6,11 +6,14 @@ from time import sleep
 
 
 async def main():
-    #with USRotatingSensor() as hw:  # ← cleanup automático al salir
+    with USRotatingSensor() as hw:  # ← cleanup automático al salir
         try:
+            hw.MAX_DISTANCE_M = 3.0  # Ajusta la distancia máxima según tus necesidades
             hw.setup()
             while True:
-                # print(hw.realizar_barrido())
+                #print(await hw.LecturaUScmRaw())
+                print(await hw.LecturaUScm())
+                #print(await hw.realizar_barrido())
                 '''
                 a = int(input("ángulo: "))
                 print(a)
@@ -18,14 +21,15 @@ async def main():
 
                 hw.gira_sensor(a)
                 '''
+                '''
                 for a in range(0, 180+1, 20):
                     await hw.gira_sensor(a)
                     await asyncio.sleep(0.2)
                 for a in range(180, -1, -20):
                     await hw.gira_sensor(a)
                     await asyncio.sleep(0.2)                
-            
-                sleep(3)
+                '''            
+                #await asyncio.sleep(0.9)
         except KeyboardInterrupt:
             print("\n🛑 Saliendo...")
     # ← hw.cleanup() se llama automáticamente aquí

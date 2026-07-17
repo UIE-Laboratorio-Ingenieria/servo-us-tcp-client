@@ -10,6 +10,11 @@ import atexit
 
 import logging
 
+#Para evitar los mensajes por pantalla de:
+#   /home/uiegalicia/Documents/RepositoriosGIT/RoombaExtension/.venv/lib/python3.13/site-packages/gpiozero/input_devices.py:975: DistanceSensorNoEcho: no echo received
+#       warnings.warn(DistanceSensorNoEcho('no echo received')) 
+warnings.filterwarnings("ignore", category=DistanceSensorNoEcho)
+
 
 class USRotatingSensor:
     def __init__(self):
@@ -19,7 +24,7 @@ class USRotatingSensor:
         self.PIN_TRIGGER_US         = 17
         self.PIN_SERVO_GPIO         = 18
 
-        self.MAX_DISTANCE_M         = 3
+        self.MAX_DISTANCE_M         = 3.0  # Distancia máxima en metros para el sensor ultrasónico
         self.MAX_ERRORS_POR_LECTURA = 10
 
         self.ANGULO_INICIO          = 0
@@ -71,7 +76,7 @@ class USRotatingSensor:
                     self.logea(f"USRotatingSensor.cleanup: ⚠ {nombre}: ya era None, saltando")
             except Exception as e:
                 # Logear pero NO propagar: queremos limpiar todo lo posible
-                logea(f"USRotatingSensor.cleanup: ⚠ ERROR cerrando {nombre}: {type(e).__name__}: {e}")
+                self.logea(f"USRotatingSensor.cleanup: ⚠ ERROR cerrando {nombre}: {type(e).__name__}: {e}")
         
         # Resetear estados
         self.sensor = None
@@ -96,7 +101,7 @@ class USRotatingSensor:
         self.cleanup()
         return False  # No suprimir excepciones
 
-    
+    # Para llamar después de crear la instancia y antes de usarla, para inicializar el hardware de los dispositivos (sensor, servo)
     def setup(self):
         try:
             # Inicializa el sensor de distancia utilizando la librería GPIO Zero
@@ -105,8 +110,7 @@ class USRotatingSensor:
             self.logea(f"Pin TRIGGER: {self.PIN_TRIGGER_US}")
             self.logea(f"MAX_DISTANCE (m): {self.MAX_DISTANCE_M}")
 
-            self.sensor = DistanceSensor(echo=self.PIN_ECHO_US, trigger=self.PIN_TRIGGER_US, max_distance=self.MAX_DISTANCE_M, queue_len=1, pin_factory=self.factory)        
-
+            self.sensor = DistanceSensor(echo=self.PIN_ECHO_US, trigger=self.PIN_TRIGGER_US, max_distance=self.MAX_DISTANCE_M, queue_len=5, pin_factory=self.factory)        
             
             # Inicializar el Servo
             # Ajustamos min_pulse y max_pulse para servos estándar de 180 grados
@@ -129,7 +133,9 @@ class USRotatingSensor:
     def logea(self, mens):
         if self.DEBUG:
             logging.info(mens) 
-            
+
+    async def LecturaUScmRaw(self): #çFunción para obtener la lectura del sensor ultrasónico en centímetros, sin filtrar ni procesar
+        return round(self.sensor.distance * 100, 1)  # Convertimos a cm y redondeamos a 1 decimal
 
     async def LecturaUScm(self):
         delay = 0.05
@@ -141,7 +147,7 @@ class USRotatingSensor:
                 # Obligamos a que siempre se registre para poder contarlo
                 warnings.simplefilter("always")
             
-                # Llamada a tu función
+                # Pedimos la distancia al sensor
                 distance = self.sensor.distance
             
                 # Revisamos si saltó el warning específico
@@ -157,7 +163,7 @@ class USRotatingSensor:
                     self.logea(f"Lectura exitosa en el intento {intento}")
                     break
                 else:
-                    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+                    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
                     self.logea(f"Intento {intento} fallido: DistanceSensorNoEcho detectado.")
                     if intento == self.MAX_ERRORS_POR_LECTURA:
                         raise RuntimeError(f"Fallo crítico: El sensor no respondió tras {self.MAX_ERRORS_POR_LECTURA} intentos.")                
@@ -184,7 +190,7 @@ class USRotatingSensor:
         i = 0
         Num_Err = 0
         while i <num_medidas:
-            LecturaSensor = self.LecturaUScm()
+            LecturaSensor = await self.LecturaUScm()
             Lecturas.append(LecturaSensor)
             await asyncio.sleep(0.03)
             i += 1
@@ -228,7 +234,7 @@ class USRotatingSensor:
         
             # C. MEDIR
             # El sensor devuelve metros, multiplicamos por 100 para cm.
-            Lecturas.append(self.LecturaUScm_Filtrada())
+            Lecturas.append(await self.LecturaUScm_Filtrada())
         
             # D. ESPERA ACÚSTICA (Crucial)
             # Esperamos a que los ecos ultrasónicos se disipen antes del siguiente disparo.
