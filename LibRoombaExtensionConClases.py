@@ -19,19 +19,17 @@ warnings.filterwarnings("ignore", category=DistanceSensorNoEcho)
 class USRotatingSensor:
     def __init__(self):
         # Inicialización de atributos de la clase
-        self.DEBUG                  = True
-        self.PIN_ECHO_US            = 27
-        self.PIN_TRIGGER_US         = 17
-        self.PIN_SERVO_GPIO         = 18
+        self.DEBUG                  = True #Para activar el registro de actividad en fichero de log
+        self.PIN_ECHO_US            = 27   #Pin de la raspberry conectado al pin ECHO del sensor ultrasónico
+        self.PIN_TRIGGER_US         = 17   #Pin de la raspberry conectado al pin TRIGGER del sensor ultrasónico
+        self.PIN_SERVO_GPIO         = 18   #Pin de la raspberry conectado al pin de control del servo
 
-        self.MAX_DISTANCE_M         = 3.0  # Distancia máxima en metros para el sensor ultrasónico
-        self.MAX_ERRORS_POR_LECTURA = 10
+        self.MAX_DISTANCE_M         = 2.0  # Distancia máxima en metros para el sensor ultrasónico
+        
+        self.ANGULO_MINIMO          = 0    #Angulo mínimo de giro del servo (0 grados) 
+        self.ANGULO_MAXIMO          = 180  #Angulo máximo de giro del servo (180 grados)
 
-        self.ANGULO_INICIO          = 0
-        self.ANGULO_FIN             = 180
-        self.PASO_ANGULO            = 20
-
-        self.servo_ult_pos          = 0
+        self.servo_ult_pos          = 0    #Variable para almacenar la última posición del servo ya que se pierde al ejecutar el detach para evitar la vibración
 
         # Registrar cleanup en atexit como red de seguridad para liberar recursos
         atexit.register(self.cleanup)
@@ -46,9 +44,15 @@ class USRotatingSensor:
         # Para configurar el acceso al GPIO de la Raspberry, mejora la precisión en los cálculos de temporización
         # Necesita que esté en funcionamiento el demonio pigpiod
         self.factory = PiGPIOFactory()
+        
         self.sensor  = None
         self.servo   = None
-        self.logea('Instancia USRotatingSensor creada.')
+        self.logea('USRotatingSensor.__init__: Instancia USRotatingSensor creada.')
+
+    # Método para loguear mensajes
+    def logea(self, mens):
+        if self.DEBUG:
+            logging.info(mens) 
 
     def cleanup(self):
         """
@@ -56,7 +60,7 @@ class USRotatingSensor:
         Debe llamarse antes de que el programa termine.
         """
         self.logea("=" * 60)
-        self.logea("USRotatingSensor: INICIANDO LIMPIEZA DE RECURSOS...")
+        self.logea("USRotatingSensor.cleanup: INICIANDO LIMPIEZA DE RECURSOS...")
         self.logea("=" * 60)
         
         # Orden inverso al de creación + try/except individual por recurso
@@ -105,73 +109,65 @@ class USRotatingSensor:
     def setup(self):
         try:
             # Inicializa el sensor de distancia utilizando la librería GPIO Zero
-            self.logea("Configurando sensor: ")
-            self.logea(f"Pin ECHO: {self.PIN_ECHO_US}")
-            self.logea(f"Pin TRIGGER: {self.PIN_TRIGGER_US}")
-            self.logea(f"MAX_DISTANCE (m): {self.MAX_DISTANCE_M}")
+            self.logea("USRotatingSensor.setup: Configurando sensor: ")
+            self.logea(f"   Pin ECHO: {self.PIN_ECHO_US}")
+            self.logea(f"   Pin TRIGGER: {self.PIN_TRIGGER_US}")
+            self.logea(f"   MAX_DISTANCE (m): {self.MAX_DISTANCE_M}")
 
             self.sensor = DistanceSensor(echo=self.PIN_ECHO_US, trigger=self.PIN_TRIGGER_US, max_distance=self.MAX_DISTANCE_M, queue_len=5, pin_factory=self.factory)        
             
             # Inicializar el Servo
             # Ajustamos min_pulse y max_pulse para servos estándar de 180 grados
-            self.logea("Configurando servo: ")
-            self.logea(f"Pin Servo GPIO: {self.PIN_SERVO_GPIO}")
-            self.logea(f"Ángulo Inicio: {self.ANGULO_INICIO}")
-            self.logea(f"Ángulo Fin: {self.ANGULO_FIN}")
-            self.logea(f"Salto ángulo: {self.PASO_ANGULO}")        
+            self.logea("USRotatingSensor.setup: Configurando servo: ")
+            self.logea(f"   Pin Servo GPIO: {self.PIN_SERVO_GPIO}")
+            self.logea(f"   Ángulo Inicio: {self.ANGULO_MINIMO}")
+            self.logea(f"   Ángulo Fin: {self.ANGULO_MAXIMO}")
 
             self.servo = AngularServo(self.PIN_SERVO_GPIO, min_angle=0, max_angle=180,
                                     min_pulse_width=0.0005, max_pulse_width=0.0025,
                                     pin_factory=self.factory)
+            # Inicializamos el servo a la posición 0 grados y guardamos esta posición como última conocida
             self.servo.angle   = 0
             self.servo_ult_pos = 0  
         except Exception as e:
             self.logea(f"USRotatingSensor.setup: ✗ ERROR crítico en inicialización: {e}")
             raise RuntimeError(f"USRotatingSensor.setup: Fallo en inicialización de hardware: {e}")            
 
-    # Método para loguear mensajes
-    def logea(self, mens):
-        if self.DEBUG:
-            logging.info(mens) 
+    async def LecturaUScmRaw(self): #Función para obtener la lectura del sensor ultrasónico en centímetros, sin filtrar ni procesar
+        resultado = round(self.sensor.distance * 100, 1)  # Convertimos a cm y redondeamos a 1 decimal
+        self.logea(f"USRotatingSensor.LecturaUScmRaw: Resultado final: {resultado}")
+        return round(resultado)
 
-    async def LecturaUScmRaw(self): #çFunción para obtener la lectura del sensor ultrasónico en centímetros, sin filtrar ni procesar
-        return round(self.sensor.distance * 100, 1)  # Convertimos a cm y redondeamos a 1 decimal
+    async def gira_servo_raw(self, angulo):
+        """
+        Para acceso directo al servo
+        """
+        #Validar ángulo solicitado 
+        if (angulo < self.ANGULO_MINIMO) or (angulo > self.ANGULO_MAXIMO):
+            raise ValueError(format("USRotatingSensor.gira_servo_raw: Ángulo pasado (%d) incorrecto. Debe estar entre {self.ANGULO_MINIMO} y {self.ANGULO_MAXIMO} grados."))
 
-    async def LecturaUScm(self):
-        delay = 0.05
-        num_err = 0
-        resultado = None
+        self.servo.angle = angulo
+        self.servo_ult_pos = angulo
 
-        for intento in range(1, self.MAX_ERRORS_POR_LECTURA + 1):
-            with warnings.catch_warnings(record=True) as lista_warnings:
-                # Obligamos a que siempre se registre para poder contarlo
-                warnings.simplefilter("always")
+
+    async def gira_servo(self, angulo):
+        try:
+            #Validar ángulo solicitado 
+            if (angulo < self.ANGULO_MINIMO) or (angulo > self.ANGULO_MAXIMO):
+                raise ValueError(format("Ángulo pasado (%d) incorrecto. Debe estar entre {self.ANGULO_MINIMO} y {self.ANGULO_MAXIMO} grados."))
             
-                # Pedimos la distancia al sensor
-                distance = self.sensor.distance
-            
-                # Revisamos si saltó el warning específico
-                hubo_error_eco = any(
-                    isinstance(w.message, DistanceSensorNoEcho) 
-                    for w in lista_warnings
-                    if hasattr(w, 'message')
-                )
-            
-                if not hubo_error_eco:
-                    resultado =  round(distance * 100, 1)    
+            #Cálculo de pausa para el movimiento pedido, 0,003 sg por grado de movimiento
+            pausa = abs(angulo - self.servo_ult_pos) * 0.003
 
-                    self.logea(f"Lectura exitosa en el intento {intento}")
-                    break
-                else:
-                    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-                    self.logea(f"Intento {intento} fallido: DistanceSensorNoEcho detectado.")
-                    if intento == self.MAX_ERRORS_POR_LECTURA:
-                        raise RuntimeError(f"Fallo crítico: El sensor no respondió tras {self.MAX_ERRORS_POR_LECTURA} intentos.")                
-                    await asyncio.sleep(delay)
-                
-        # Continuar con la ejecución normal
-        self.logea(f"Resultado final: {resultado}")
-        return resultado            
+            self.servo.angle   = angulo
+            self.servo_ult_pos = angulo
+
+            await asyncio.sleep(pausa)
+            #self.servo.detach() #se ha quitado porque con los servos pequeños, durante el barrido hacía movimientos extraños
+        except asyncio.CancelledError:
+            # Limpieza del servo al cancelar
+            self.servo.detach()  # o self.servo.mid(), según prefieras
+            raise  # Importante: re-lanzar para que asyncio gestione bien la cancelación
 
     async def LecturaUScm_Filtrada(self, num_medidas=5, umbral_tolerancia=2.0):
         """
@@ -188,9 +184,8 @@ class USRotatingSensor:
         #Sacamos lecturas consecutivas del sensor 
         Lecturas = []
         i = 0
-        Num_Err = 0
         while i <num_medidas:
-            LecturaSensor = await self.LecturaUScm()
+            LecturaSensor = await self.LecturaUScmRaw()
             Lecturas.append(LecturaSensor)
             await asyncio.sleep(0.03)
             i += 1
@@ -221,47 +216,53 @@ class USRotatingSensor:
         self.logea(f"LecturaUScm_Filtrada: resultado lectura sensor US por promedio de medidas:{Resultado} ")
         return Resultado
 
-    async def realizar_barrido(self):
-        Lecturas = []
-        for angulo in range(self.ANGULO_INICIO, self.ANGULO_FIN + 1, self.PASO_ANGULO):
-            # A. MOVER
-            self.servo.angle = angulo
+    async def realizar_barrido(self, ang_inicio=0, ang_fin=180, salto_angulo=20, retorno_final=True):
+        #función auxiliar para que el while funcione con incrementos positivos o negativos según el sentido del barrido
+        def continuar(ang_actual, ang_fin, salto):
+            if salto > 0:
+                return ang_actual <= ang_fin
+            else:
+                return ang_actual >= ang_fin
+            
+        #Comprobamos que los parámetros de barrido son correctos
+        if ang_inicio<self.ANGULO_MINIMO or ang_inicio>self.ANGULO_MAXIMO:
+            raise ValueError(f"Parámetros de barrido incorrectos: inicio={ang_inicio}. Debe estar entre {self.ANGULO_MINIMO} y {self.ANGULO_MAXIMO}.")
+        if ang_fin<self.ANGULO_MINIMO or ang_fin>self.ANGULO_MAXIMO:
+            raise ValueError(f"Parámetros de barrido incorrectos: fin={ang_fin}. Debe estar entre {self.ANGULO_MINIMO} y {self.ANGULO_MAXIMO}.")
         
-            # B. ESPERA MECÁNICA (Crucial)
-            # Damos tiempo al servo para llegar y detener la vibración.
-            # Si el salto es pequeño (5-10 grados), 0.1s o 0.2s es suficiente.
-            await asyncio.sleep(0.2) 
+        if ang_inicio>=ang_fin and salto_angulo>0:
+            raise ValueError(f"Parámetros de barrido incorrectos: inicio={ang_inicio} debe ser menor que fin={ang_fin} para un salto positivo.")
+        if ang_inicio<=ang_fin and salto_angulo<0:
+            raise ValueError(f"Parámetros de barrido incorrectos: inicio={ang_inicio} debe ser mayor que fin={ang_fin} para un salto negativo.")
+
+        self.logea(f"USRotatingSensor.realizar_barrido: Iniciando barrido desde {ang_inicio}° hasta {ang_fin}° con paso de {salto_angulo}°.")
+
+        Angulos_Lecturas = []
+        Lecturas_Sensor = []
         
-            # C. MEDIR
-            # El sensor devuelve metros, multiplicamos por 100 para cm.
-            Lecturas.append(await self.LecturaUScm_Filtrada())
-        
-            # D. ESPERA ACÚSTICA (Crucial)
+        ang = ang_inicio
+        while continuar(ang, ang_fin, salto_angulo):
+            #Movemos el servo al ángulo deseado y esperamos a que se estabilice
+            await self.gira_servo(ang)
+
+            #Tomamos lectura del sensor ultrasónico filtrada y la guardamos junto con el ángulo correspondiente
+            lectura = await self.LecturaUScm_Filtrada()
+            Angulos_Lecturas.append(ang)
+            Lecturas_Sensor.append(lectura)
+            
             # Esperamos a que los ecos ultrasónicos se disipen antes del siguiente disparo.
             await asyncio.sleep(0.1)
-        #Volvemos a la posición inicial    
-        self.servo.angle = 0
-        return Lecturas
+            
+            self.logea(f"USRotatingSensor.realizar_barrido: Ángulo {ang}° -> Lectura {lectura} cm")
+            ang += salto_angulo
 
-    def posicion_angulo_0(self):
-        self.servo.angle = 0
+        self.logea(f"USRotatingSensor.realizar_barrido: Barrido completado. Ángulos: {Angulos_Lecturas}, Lecturas: {Lecturas_Sensor}")
 
-    async def gira_sensor(self, angulo):
-        try:
-            #Validar ángulo solicitado 
-            if (angulo < 0) or (angulo > 180):
-                raise ValueError(format("Ángulo pasado (%d) incorrecto. Debe estar entre 0 y 180 grados."))
-            #Cálculo de pausa para el movimiento pedido, 0,003 sg por grado de movimiento
-            pausa = abs(angulo - self.servo_ult_pos) * 0.003
-            self.servo.angle   = angulo
-            self.servo_ult_pos = angulo
-            await asyncio.sleep(pausa)
-            # self.servo.detach()
-            #  await asyncio.sleep(pausa)      
-        except asyncio.CancelledError:
-            # Limpieza del servo al cancelar
-            self.servo.detach()  # o self.servo.mid(), según prefieras
-            raise  # Importante: re-lanzar para que asyncio gestione bien la cancelación        
+        if retorno_final:
+            await self.gira_servo(ang_inicio) #Volvemos a la posición inicial    
+
+        return (Angulos_Lecturas, Lecturas_Sensor)
+
 
     def run(self, coro):
         """Punto de entrada que gestiona Ctrl-C limpiamente."""
