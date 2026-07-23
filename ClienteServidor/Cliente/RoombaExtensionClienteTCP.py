@@ -79,21 +79,5 @@ async def main() -> None:
             log.error("Error del servidor: %s", resp.error)  
 
 
-
-        resp = await client.send_command("ping")
-        log.info("Respuesta: %s", resp)
-
-        resp = await client.send_command("get_temperature", {"sensor_id": "sensor_1"})
-        if resp.ok:
-            log.info("Temperatura: %s", resp.result)
-        else:
-            log.error("Error del servidor: %s", resp.error)
-
-
-
-
-          
-
-
 if __name__ == "__main__":
     asyncio.run(main())
