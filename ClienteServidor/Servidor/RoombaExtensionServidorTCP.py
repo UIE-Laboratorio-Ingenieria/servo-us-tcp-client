@@ -52,21 +52,7 @@ async def handle_realizar_barrido(params: dict) -> Any:
     await sensor.realizar_barrido()
     return {"barrido_result": resultado}
 
-
-
-async def handle_ping(params: dict) -> Any:
-    return {"pong": True}
-
-
-async def handle_get_temperature(params: dict) -> Any:
-    sensor_id = params.get("sensor_id", "default")
-    await asyncio.sleep(0)  # aquí iría I/O real (lectura de sensor, etc.)
-    return {"sensor_id": sensor_id, "temperature": 21.5}
-
-
 HANDLERS: dict[str, Callable[[dict], Awaitable[Any]]] = {
-    "ping": handle_ping,
-    "get_temperature": handle_get_temperature,
     "gira_servo_raw": handle_gira_servo_raw,
     "gira_servo": handle_gira_servo,
     "LecturaUScmRaw": handle_LecturaUScmRaw,
