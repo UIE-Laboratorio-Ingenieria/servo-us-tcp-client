@@ -158,8 +158,8 @@ Por ejemplo:
 
 ```python
 (
-[0, 20, 40, 60, 80, 100, 120, 140, 160, 180],
-[85, 82, 78, 74, 70, 71, 76, 81, 84, 87]
+    [0, 20, 40, 60, 80, 100, 120, 140, 160, 180],
+    [85, 82, 78, 74, 70, 71, 76, 81, 84, 87]
 )
 ```
 
@@ -191,7 +191,7 @@ La librería puede utilizarse tanto de forma local sobre una Raspberry Pi como m
 
 #### Cliente
 
-El cliente implementa una interfaz sencilla para enviar comandos al servidor mediante TCP. Cada petición se codifica en formato `JSON` y se transmite utlizando un protocolo de mensajes con longitud prefijada.
+El cliente implementa una interfaz sencilla para enviar comandos al servidor mediante TCP. Cada petición se codifica en formato `JSON` y se transmite utilizando un protocolo de mensajes con longitud prefijada.
 
 #### Protocolo
 
@@ -208,9 +208,96 @@ El servidor recibe las peticiones TCP, ejecuta la operación correspondiente sob
 
 #### Hardware
 
+El acceso al hardware se realiza exclusivamente en la Raspberry Pi mediante la calse `USRotatingSensor`, que encapsula toda la lógica de control de dispositivos físicos.
 
+Las principales fucnionalidades implementadas son:
+
+* Control del servomotor.
+* Lectura del sensor de ultrasonidos.
+* Filtrado de medidas para reducir lecturas espurias.
+* Realización de barridos angulares configurables.
+* Gestión automática de recursos hardware
+
+Esta arquitectura permite que varios estudiantes puedan acceder al dispositivo físico desde sus propios equipos sin necesidad de utilizar directamente los GPIO de la Raspberry Pi.
 
 ## 6. API
+
+### Clase `USRotatingSensor`
+
+La clase `USRotatingSensor` proporciona acceso al servomotor y al sensor de ultrasonidos conectados a la Raspberry Pi.
+
+### Métodos disponibles
+
+| Método | Parámetros | Descripción |
+| --- | --- | --- |
+| setup() | Ninguno | Inicializa el hardware y configura los dispositivos GPIO. |
+| cleanup() | Ninguno | Libera los recursos hardware utilizados por la librería. |
+| lecturaUScmRaw() | Ninguno | Obtiene una lectura directa del sensor de ultrasonidos. |
+| LecturaUScm_Filtrada() | num_medidas=5, umbral_tolerancia=2.0 | Obtiene varias medidas, elimina valores espurios y devuelve una distancia filtrada. |
+| gira_servo_raw() | angulo | Posiciona el servo sin aplicar tiempos de estabilización. |
+| gira_servo_raw() | angulo | Mueve el servo y espera el tiempo necesario para completar el movimiento. |
+| realizar_barrido() | ang_inicio=0, ang_fin=180, salto_angulo=20, retorno_final=True | Realiza un barrido angular y devuelve los ángulos y lecturas obtenidas. |
+| run() | coro | Ejecuta una corrutina gestionando correctamente las interrupciones por teclado (Ctrl+C). |
+
+#### **Inicialización del Hardware**
+
+```python
+sensor.setup()
+```
+
+#### **Lectura directa del sensor**
+
+```python
+distancia = await sensor.LecturaUScmRaw()
+```
+
+#### **Lectura filtrada del sensor**
+
+```python
+distancia = await sensor.LecturaUScm_Filtrada(
+    num_medidas=5,
+    umbral_tolerancia=2.0
+)
+```
+
+#### **Movimiento directo del servo**
+
+```python
+await servo.gira_servo_raw(90)
+```
+
+#### **Movimiento controlado del servo**
+
+```python
+await sensor.gira_servo(90)
+```
+
+#### **Barrido angular**
+
+```python
+angulos, lecturas = await sensor.realizar_barrido(
+    ang_inicio=0,
+    ang_fin=180,
+    salto_angulo=20,
+    retorno_final=True
+)
+```
+
+#### **Liberación de recursos**
+
+```python
+sensor.cleanup()
+```
+
+Cuando se utiliza un bloque `with` esta limpieza se realiza automáticamente
+
+```python
+with USRotatingSensor() as sensor:
+    sensor.setup()
+```
+
+
+
 ## 7. Ejemplos
 ## 8. Limitaciones
 ## 9. Licencia
