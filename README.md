@@ -208,7 +208,7 @@ El servidor recibe las peticiones TCP, ejecuta la operación correspondiente sob
 
 #### Hardware
 
-El acceso al hardware se realiza exclusivamente en la Raspberry Pi mediante la calse `USRotatingSensor`, que encapsula toda la lógica de control de dispositivos físicos.
+El acceso al hardware se realiza exclusivamente en la Raspberry Pi mediante la clase `USRotatingSensor`, que encapsula toda la lógica de control de dispositivos físicos.
 
 Las principales funcionalidades implementadas son:
 
@@ -232,10 +232,10 @@ La clase `USRotatingSensor` proporciona acceso al servomotor y al sensor de ultr
 | --- | --- | --- |
 | setup() | Ninguno | Inicializa el hardware y configura los dispositivos GPIO. |
 | cleanup() | Ninguno | Libera los recursos hardware utilizados por la librería. |
-| lecturaUScmRaw() | Ninguno | Obtiene una lectura directa del sensor de ultrasonidos. |
+| LecturaUScmRaw() | Ninguno | Obtiene una lectura directa del sensor de ultrasonidos. |
 | LecturaUScm_Filtrada() | num_medidas=5, umbral_tolerancia=2.0 | Obtiene varias medidas, elimina valores espurios y devuelve una distancia filtrada. |
 | gira_servo_raw() | angulo | Posiciona el servo sin aplicar tiempos de estabilización. |
-| gira_servo_raw() | angulo | Mueve el servo y espera el tiempo necesario para completar el movimiento. |
+| gira_servo() | angulo | Mueve el servo y espera el tiempo necesario para completar el movimiento. |
 | realizar_barrido() | ang_inicio=0, ang_fin=180, salto_angulo=20, retorno_final=True | Realiza un barrido angular y devuelve los ángulos y lecturas obtenidas. |
 | run() | coro | Ejecuta una corrutina gestionando correctamente las interrupciones por teclado (Ctrl+C). |
 
@@ -313,7 +313,7 @@ El servidor TCP permite acceder remotamente al hardware mediante comandos enviad
 * Ejemplo de lectura de distancia.
 
 ```python
-respuesta = await client.sendo_command(
+respuesta = await client.send_command(
     "LecturaUScmRaw"
 )
 ```
@@ -329,7 +329,7 @@ respuesta = await client.sendo_command(
 * Ejemplo de movimiento del servo
 
 ```python
-respuesta = await client.sendo_command(
+respuesta = await client.send_command(
     "gira_servo",
     {
         "angle": 90
@@ -348,7 +348,7 @@ respuesta = await client.sendo_command(
 * Ejemplo de barrido angular
 
 ```python
-respuesta = await client.sendo_command(
+respuesta = await client.send_command(
     "realizar_barrido",
     {
         "ang_inicio": 0,
@@ -359,8 +359,134 @@ respuesta = await client.sendo_command(
 )
 ```
 
-* La Respuesta contendrá los ángulos recorrido y las lecturas obtenidas durante el barrido.
+* La respuesta contendrá los ángulos recorrido y las lecturas obtenidas durante el barrido.
 
 ## 7. Ejemplos
+
+### Lectura directa de distancia
+
+Obtener una lectura inmediata del sensor de ultrasonidos:
+
+```python
+from LibRoombaExtensionConClases import USRotatingSensor
+import asyncio
+
+async def main():
+
+    with USRotatingSensor() as sensor:
+        sensor.setup()
+
+        distancia = await sensor.LecturaUScmRaw()
+
+        print(f"Distancia: {distancia} cm")
+
+asyncio.run(main())
+```
+
+Salida típica:
+
+```text
+0° -> 85 cm
+20° -> 82 cm
+40° -> 78 cm
+60° -> 74 cm
+80° -> 70 cm
+100° -> 71 cm
+120° -> 76 cm
+140° -> 81 cm
+160° -> 84 cm
+180° -> 87 cm
+```
+
+---
+
+### Lectura remota mediante TCP
+
+Obtener una distancia desde un cliente remoto conectdo al servidor:
+
+```python
+from LibRoombaExtensionConClases import USRotatingSensor
+import asyncio
+
+async def main():
+
+    async with TCPClient(
+        host="192.168.1.100",
+        port=5050
+    ) as client:
+
+        respuesta = await client.send_command(
+            "LecturaUScmRaw"
+        )
+
+        print (respuesta.result)
+
+asyncio.run(main())
+```
+
+---
+
+### Barrido remoto mediante TCP
+
+Realizar un barrido angular cumpleto desde un cliente remoto:
+
+```python
+from RoombaExtensionClienteTCP import TCPClient
+import asyncio
+ 
+async def main():
+
+    async with TCPClient(
+        host="192.168.1.100",
+        port=5050
+    ) as client:
+
+        respuesta = await client.send_command(
+            "realizar_barrido",
+            {
+                "ang_inicio": 0,
+                "ang_fin": 180,
+                "salto_angulo": 20,
+                "retorno_final". True
+            }
+        )
+
+        print(respuesta.result)
+
+asyncio.run(main())
+```
+
+### Utilizando un bloque `with`
+
+La forma recomendada de utilizar la librería es mediante context managers, ya que garantizan la liberación automática de recursos hardware.
+
+```python
+with USRotatingSensor() as sensor:
+    sensor.setup()
+
+    # Código de usuario
+```
+
+Al salir del bloque se ejecutará automáticamente el método `cleanup()`
+
 ## 8. Limitaciones
+
+Antes de utilizar la librería, es importante tener en cuenta las siguientes limitaciones:
+
+* El acceso al hardware está diseñado para ejecutarse en una Raspberry Pi compatible con `GPIO Zero` y `pigpio`.
+* La precisión de las medidas depende de las características y limitaciones propias del sensor de ultrasonidos utilizado.
+* Los materiales blandos, absorbentes, irregulares o con determinadas inclinaciones pueden producir lecturas imprecisas.
+* La distancia máxima efectiva está limitada por las características del sensor de ultrasonidos utilizado.
+* La velocidad de adquisición de datos depende del tiempo necesario para mover el servomotor entre posiciones y realizar las mediciones correspondientes.
+* En modo cliente-servidor, el rendimiento y la latencia dependen de la calidad de la conexión de red entre el cliente y la Raspberry Pi.
+* La librería está orientada principalmente a entornos educativos, prácticas de laboratorio y prototipado rápido, por lo que no ha sido diseñada para aplicaciones críticas o entornos industriales.
+* El acceso simultaneo de múltiples clientes al mismo dispositivo puede requerir mecanismos adicionales de coordinación en función del escenario de uso.
+
+
 ## 9. Licencia
+
+Este proyecto se distribuye bajo los términos de la licencia MIT.
+
+Se permite su uso, copia, modificación y distribución, tanto para fines educativos como de investigación, de acuerdo con las condiciones establecidas en dicha licencia.
+
+Consulte el archivo `LICENSE` para obtener el texto completo de la licencia.
