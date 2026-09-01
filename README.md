@@ -210,7 +210,7 @@ El servidor recibe las peticiones TCP, ejecuta la operación correspondiente sob
 
 El acceso al hardware se realiza exclusivamente en la Raspberry Pi mediante la calse `USRotatingSensor`, que encapsula toda la lógica de control de dispositivos físicos.
 
-Las principales fucnionalidades implementadas son:
+Las principales funcionalidades implementadas son:
 
 * Control del servomotor.
 * Lectura del sensor de ultrasonidos.
@@ -222,11 +222,11 @@ Esta arquitectura permite que varios estudiantes puedan acceder al dispositivo f
 
 ## 6. API
 
-### Clase `USRotatingSensor`
+### 6.1. Clase `USRotatingSensor`
 
 La clase `USRotatingSensor` proporciona acceso al servomotor y al sensor de ultrasonidos conectados a la Raspberry Pi.
 
-### Métodos disponibles
+### 6.2 Métodos disponibles
 
 | Método | Parámetros | Descripción |
 | --- | --- | --- |
@@ -295,8 +295,71 @@ Cuando se utiliza un bloque `with` esta limpieza se realiza automáticamente
 with USRotatingSensor() as sensor:
     sensor.setup()
 ```
+### 6.3. API TCP
+
+El servidor TCP permite acceder remotamente al hardware mediante comandos enviados en formato JSON
+
+#### Comandos disponibles
+
+| Comando | Parámetros | Descripción |
+|---|---|---|
+| gira_servo_raw | angle | Posiciona el servomotor en el ángulo indicado |
+| gira_servo | angle | Mueve el servomotor aplicando tiempo de estabilización |
+| LecturaUScmRaw | Ninguno | Devuelve una lectura directa del sensor de ultrasonidos |
+| LecturaUScm_Filtrada | Ninguno | Devuelve una lectura filtrada del sensor de ultrasonidos |
+| realizar_barrido| ang_inicio, ang_fin, salto_angulo, retorno_final | Realiza un barrido angular completo |
 
 
+* Ejemplo de lectura de distancia.
+
+```python
+respuesta = await client.sendo_command(
+    "LecturaUScmRaw"
+)
+```
+
+* Respuesta:
+  
+```text
+{
+    "distance_cm": 85
+}
+```
+
+* Ejemplo de movimiento del servo
+
+```python
+respuesta = await client.sendo_command(
+    "gira_servo",
+    {
+        "angle": 90
+    }
+)
+```
+
+* Respuesta:
+  
+```text
+{
+    "angle_set": 90
+}
+```
+
+* Ejemplo de barrido angular
+
+```python
+respuesta = await client.sendo_command(
+    "realizar_barrido",
+    {
+        "ang_inicio": 0,
+        "ang_fin": 180,
+        "salto_angulo": 20,
+        "retorno_final": True,
+    }
+)
+```
+
+* La Respuesta contendrá los ángulos recorrido y las lecturas obtenidas durante el barrido.
 
 ## 7. Ejemplos
 ## 8. Limitaciones
