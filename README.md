@@ -47,15 +47,16 @@ servo-us-tcp-client/
 │   └── basic_scan.py
 │
 ├── client/
-│   ├── README.md
-│   ├── protocol.py
-│   └── RoombaExtensionClienteTCP.py
+│ ├── README.md
+│ └── RoombaExtensionClienteTCP.py
 │
 ├── server/
-│   ├── README.md
-│   ├── protocol.py
-│   ├── LibRoombaExtensionConClases.py
-│   └── RoombaExtensionServidorTCP.py
+│ ├── README.md
+│ ├── RoombaExtensionServidorTCP.py
+│ └── LibRoombaExtensionConClases.py
+│
+├── common/
+│ └── protocol.py
 │
 └── docs/
     ├── teacher-guide.md

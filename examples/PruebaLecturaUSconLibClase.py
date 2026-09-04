@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from LibRoombaExtensionConClases import USRotatingSensor
+from server.us_rotating_sensor import USRotatingSensor
 import asyncio
 from time import sleep
 

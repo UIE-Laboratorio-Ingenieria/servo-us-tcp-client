@@ -3,7 +3,7 @@ import logging
 
 from protocol import Request, Response, send_framed, recv_framed
 
-import LibRoombaExtensionConClases
+import server.us_rotating_sensor as us_rotating_sensor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)

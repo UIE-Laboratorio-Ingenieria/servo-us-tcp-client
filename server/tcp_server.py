@@ -7,7 +7,7 @@ from typing import Callable, Any, Awaitable
 
 from protocol import Request, Response, send_framed, recv_framed
 
-from LibRoombaExtensionConClases import USRotatingSensor
+from server.us_rotating_sensor import USRotatingSensor
 
 
 
