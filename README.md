@@ -31,8 +31,39 @@ Los principales casos de uso son:
 * Acceso remoto al hardware desde cualquier equipo de la misma red.
 * Protocolo de comunicación sencillo basado en mensajes JSON.
 * Orientado a la docencia, prácticas de laboratorio y prototipado rápido de aplicaciones de robótica.
+
+## 3. Estructura del Repositorio
+
+```text
+servo-us-tcp-client/
+│
+├── README.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── LICENSE
+│
+├── examples/
+│   └── basic_scan.py
+│
+├── client/
+│   ├── README.md
+│   ├── protocol.py
+│   └── RoombaExtensionClienteTCP.py
+│
+├── server/
+│   ├── README.md
+│   ├── protocol.py
+│   ├── LibRoombaExtensionConClases.py
+│   └── RoombaExtensionServidorTCP.py
+│
+└── docs/
+    ├── teacher-guide.md
+    ├── laboratory-setup.md
+    └── troubleshooting.md
+```
   
-## 3. Instalación
+## 4. Instalación
 
 #### Requisitos cliente
 * Windows 10/11, macOS o Linux.
@@ -91,7 +122,7 @@ gpiozero OK
 pigpio OK
 ```
 
-## 4. Quick Start
+## 5. Quick Start
 
 #### Uso local
 
@@ -163,7 +194,7 @@ Por ejemplo:
 )
 ```
 
-## 5. Arquitectura Cliente-Servidor
+## 6. Arquitectura Cliente-Servidor
 
 La librería puede utilizarse tanto de forma local sobre una Raspberry Pi como mediante una arquitectura cliente-servidor basada en TCP.
 
@@ -220,13 +251,13 @@ Las principales funcionalidades implementadas son:
 
 Esta arquitectura permite que varios estudiantes puedan acceder al dispositivo físico desde sus propios equipos sin necesidad de utilizar directamente los GPIO de la Raspberry Pi.
 
-## 6. API
+## 7. API
 
-### 6.1. Clase `USRotatingSensor`
+### 7.1. Clase `USRotatingSensor`
 
 La clase `USRotatingSensor` proporciona acceso al servomotor y al sensor de ultrasonidos conectados a la Raspberry Pi.
 
-### 6.2 Métodos disponibles
+### 7.2 Métodos disponibles
 
 | Método | Parámetros | Descripción |
 | --- | --- | --- |
@@ -361,7 +392,7 @@ respuesta = await client.send_command(
 
 * La respuesta contendrá los ángulos recorrido y las lecturas obtenidas durante el barrido.
 
-## 7. Ejemplos
+## 8. Ejemplos
 
 ### Lectura directa de distancia
 
@@ -469,7 +500,7 @@ with USRotatingSensor() as sensor:
 
 Al salir del bloque se ejecutará automáticamente el método `cleanup()`
 
-## 8. Limitaciones
+## 9. Limitaciones
 
 Antes de utilizar la librería, es importante tener en cuenta las siguientes limitaciones:
 
@@ -483,7 +514,7 @@ Antes de utilizar la librería, es importante tener en cuenta las siguientes lim
 * El acceso simultaneo de múltiples clientes al mismo dispositivo puede requerir mecanismos adicionales de coordinación en función del escenario de uso.
 
 
-## 9. Licencia
+## 10. Licencia
 
 Este proyecto se distribuye bajo los términos de la licencia MIT.
 
