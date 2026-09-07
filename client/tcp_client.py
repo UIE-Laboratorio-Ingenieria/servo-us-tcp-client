@@ -2,6 +2,9 @@ import asyncio
 import logging
 import sys
 import os
+import configparser
+
+from pathlib import Path
 
 sys.path.append(
 	os.path.join(
@@ -16,9 +19,15 @@ from protocol import Request, Response, send_framed, recv_framed
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)
 
+CONFIG_FILE = Path(__file__).resolve().parent.parent / "config.ini"
 
+config = configparser.ConfigParser()
+config.read(CONFIG_FILE)
+
+SERVER_HOST = config.get("server", "host", fallback="127.0.0.1")
+SERVER_PORT = config.getint("server", "port", fallback=5050)
 class TCPClient:
-    def __init__(self, host: str = "127.0.0.1", port: int = 5050, timeout: float = 5.0):
+    def __init__(self, host: str = SERVER_HOST, port: int = SERVER_PORT, timeout: float = 5.0):
         self.host = host
         self.port = port
         self.timeout = timeout
@@ -55,7 +64,7 @@ class TCPClient:
 
 
 async def main() -> None:
-    async with TCPClient(host="127.0.0.1", port=5050) as client:
+    async with TCPClient(host=SERVER_HOST, port=SERVER_PORT) as client:
         resp = await client.send_command("gira_servo_raw", {"angle": 90})
         if resp.ok:
             log.info("Giro servo raw: %s", resp.result)
