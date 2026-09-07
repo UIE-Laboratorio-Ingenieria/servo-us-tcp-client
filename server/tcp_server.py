@@ -1,5 +1,11 @@
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "protocol.py"))
+sys.path.append(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "common"
+    )
+)
 
 import asyncio
 import logging
@@ -7,10 +13,7 @@ from typing import Callable, Any, Awaitable
 
 from protocol import Request, Response, send_framed, recv_framed
 
-from server.us_rotating_sensor import USRotatingSensor
-
-
-
+from us_rotating_sensor import USRotatingSensor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)

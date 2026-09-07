@@ -1,9 +1,17 @@
 import asyncio
 import logging
+import sys
+import os
+
+sys.path.append(
+	os.path.join(
+		os.path.dirname(__file__),
+		"..",
+		"common"
+	)
+)
 
 from protocol import Request, Response, send_framed, recv_framed
-
-import server.us_rotating_sensor as us_rotating_sensor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger(__name__)
@@ -72,7 +80,7 @@ async def main() -> None:
         else:
             log.error("Error del servidor: %s", resp.error)  
 
-        resp = await client.send_command("realizar_barrido", {"angulo_inicial": 0, "angulo_final": 180, "incremento": 20})
+        resp = await client.send_command("realizar_barrido", {"ang_inicio": 0, "ang_fin": 180, "salto_angulo": 20, "retorno_final": True})
         if resp.ok:
             log.info("Distancia (cm): %s", resp.result)
         else:

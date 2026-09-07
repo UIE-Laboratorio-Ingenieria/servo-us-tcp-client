@@ -1,5 +1,4 @@
 from gpiozero              import AngularServo,DistanceSensor
-from gpiozero.pins.pigpio  import PiGPIOFactory
 from gpiozero.exc          import DistanceSensorNoEcho
 from contextlib            import contextmanager
 from time                  import sleep
@@ -47,7 +46,7 @@ class USRotatingSensor:
         
         # Para configurar el acceso al GPIO de la Raspberry, mejora la precisión en los cálculos de temporización
         # Necesita que esté en funcionamiento el demonio pigpiod
-        self.factory = PiGPIOFactory()
+        self.factory = None # Usar backend GPIO Zero por defecto (LGPIO en Ubuntu 24.04)
         
         self.sensor  = None
         self.servo   = None
