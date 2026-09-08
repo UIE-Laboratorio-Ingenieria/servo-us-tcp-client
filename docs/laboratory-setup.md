@@ -92,7 +92,7 @@ lgpio OK
 
 <figure>
      <center>
-     <img src="../docs/images/R-Pi-4-GPIO-Pinout-1.webp" alt="Raspberry Pi 4 - Header" width="600">
+     <img src="../docs/images/setup/R-Pi-4-GPIO-Pinout-1.webp" alt="Raspberry Pi 4 - Header" width="600">
      <figcaption>Raspberry Pi - Header</figcaption>
      </center>
 </figure>
@@ -140,7 +140,7 @@ ECHO ----+----/\/\/\----+
 
 <figure>
      <center>
-     <img src="../docs/images/hc-sr04-rpi_schematic.webp" alt="Raspberry Pi 4 - HC-SR04 wiring" width="300">
+     <img src="../docs/images/setup/hc-sr04-rpi_schematic.webp" alt="Raspberry Pi 4 - HC-SR04 wiring" width="300">
      <figcaption>Raspberry Pi 4 - HC-SR04 wiring</figcaption>
      </center>
 </figure>
@@ -248,7 +248,7 @@ sudo systemctl status servo-us-server.service
 
 <figure>
      <center>
-     <img src="../docs/images/servo-us-server-status.png" alt="Server status" width="900">
+     <img src="../docs/images/setup/servo-us-server-status.png" alt="Server status" width="900">
      <figcaption>Estado del servicio</figcaption>
      </center>
 </figure>

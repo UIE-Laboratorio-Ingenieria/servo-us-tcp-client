@@ -2,28 +2,37 @@
 
 Este documento recopila los problemas más habituales detectados durante la instalación, configuración y operación de `servo-us-tcp-client`, junto con sus posibles soluciones.
 
-# Cliente TCP
+# 1. Cliente TCP
 
-## El cliente no puede conectar con el servidor
+## 1.1. El cliente no puede conectar con el servidor
 
 ### Síntoma
 
 ```text
-ConnectionRefusedError: [Errno 111] Connect call failed
+OSError: [Errno 113] Connect call failed
 ```
+
+<figure><center>
+    <img src="../docs/images/troubleshooting/Errno113.png" alt="[OSError: Errno 113]" width="600">
+</center></figure>
 
 ### Posibles causas
 
-- El servidor TCP no está en ejecución.
 - La dirección IP configurada en `config.ini` es incorrecta.
+- La Raspberry Pi no está conectada a la red
+- El servidor TCP no está en ejecución.
 - El puerto TCP 5050 no está accesible.
 - Existe un cortafuegos bloqueando la comunicación.
 
 ### Verificaciones
 
+Comprobar la ip configurada en `config.ini`:
+
 ```bash
-sudo systemctl status servo-us-server.service
+cat config.ini
 ```
+
+Comprobar el puerto TCP:
 
 ```bash
 ss -tlnp | grep 5050
@@ -33,18 +42,30 @@ ss -tlnp | grep 5050
 nc -vz IP_SERVIDOR 5050
 ```
 
+Comprobar el estado del servidor:
+```bash
+sudo systemctl status servo-us-server.service
+```
 
-## Error al resolver la dirección del servidor
+## 1.2. Error al resolver la dirección del servidor
 
 ### Síntoma
 
 ```text
 socket.gaierror: [Errno -2] Name or service not known
 ```
+<figure><center>
+    <img src="../docs/images/troubleshooting/Errno-2.png" alt="[OSError: Errno 113]" width="600">
+</center></figure>
 
 ### Causa
 
 Configuración incorrecta en `config.ini`.
+
+* Hostname inexistente.
+* IP mal escrita.
+* Caracteres extraños.
+* Comillas mal puestas.
 
 Incorrecto:
 
@@ -62,7 +83,7 @@ host = 10.10.12.169
 port = 5050
 ```
 
-## El cliente utiliza una IP incorrecta
+## 1.3. El cliente utiliza una IP incorrecta
 
 ### Verificación
 
@@ -78,32 +99,233 @@ host = IP_DE_LA_RASPBERRY
 port = 5050
 ```
 
-# Servidor TCP
+# 2. Servidor TCP
 
-## El servidor no arranca
+## 2.1. El servidor entra en bucle de reinicio
+
+### Sintoma:
+
+<figure><center>
+    <img src="../docs/images/troubleshooting/Server_no_arranca_error1.png" alt="[OSError: Errno 113]" width="800">
+</center></figure>
+
+### Causa:
+
+La ruta definida en ExecStart apunta a un fichero inexistente, por lo tanto `Python` no puede localizar el script, `systemd` intenta reiniciarlo y el servicio entra en auto-restart automaticamente.
 
 ### Verificación
 
+* Comprobar el estado
+
 ```bash
-source .venv/bin/activate
-python server/tcp_server.py
+sudo systemctl status servo-us-server.service
 ```
 
-Leer el error completo mostrado por consola.
+* Consultar los registros:
 
-## Error: No module named 'protocol'
+```bash
+sudo journalctl -u servo-us-server.service -n 50
+```
+
+* Verificar que el fichero existe
+
+```bash
+ls -l /home/create3_5/servo-us-tcp-client/server/
+```
+
+### Solución:
+
+Editar el servicio:
+
+```bash
+sudo nano /etc/systemd/system/servo-us-server.service
+```
+
+Corregir la linea del `ExecStart`:
+
+```bash
+ExecStart=/home/create3_5/servo-us-tcp-client/.venv/bin/python3 -u /home/create3_5/servo-us-tcp-client/server/tcp_server.py
+```
+
+Recargar `systemd`
+
+```bash
+sudo systemctl daemon-reload
+```
+
+Reiniciar el servicio
+
+```bash
+sudo systemctl restart servo-us-server.service
+```
+
+Comprobar el correcto funcionamiento
+
+```bash
+sudo systemctl status servo-us-server.service
+```
+
+<figure><center>
+    <img src="../docs/images/troubleshooting/Server_arrancado.png" alt="[activating server: -2]" width="800">
+</center></figure>
+
+## 2.2. El servicio no encuentra el entorno virtual
+
+### Síntoma
+
+<figure><center>
+    <img src="../docs/images/troubleshooting/Server_no_arranca_error2.png" alt="[activating server: Errno 203]" width="800">
+</center></figure>
+
 
 ### Causa
 
-`protocol.py` fue movido a:
+El fallo se produce porque el intérprete de Python definido en el `ExecStart` del servicio no existe. Es un error muy comun cuyas causas más comunes son:
 
-```text
-common/protocol.py
+* Se borra la carpeta .venv
+* Se mueve el proyecto de ubicación
+* Se reinstala Python
+* Se restaura una copia incompleta del repositorio.
+
+### Verificación
+
+Comprobar el estado del servicio:
+
+```bash
+sudo systemctl status servo-us-server.service
+```
+
+Comprobar que existe el intérprete:
+
+```bash
+ls -l /home/create3_5/servo-us-tcp-client/.venv/bin/python3
 ```
 
 ### Solución
 
-Comprobar que `tcp_server.py` y `tcp_client.py` añaden correctamente la carpeta `common` al `sys.path`.
+Editar el fichero de servicio:
+
+```bash
+sudo nano /etc/systemd/system/servo-us-server.service
+```
+
+Corregir la linea del `ExecStart`:
+
+```bash
+ExecStart=/home/create3_5/servo-us-tcp-client/.venv/bin/python3 -u /home/create3_5/servo-us-tcp-client/server/tcp_server.py
+```
+
+Recargar `systemd`
+
+```bash
+sudo systemctl daemon-reload
+```
+
+Reiniciar el servicio
+
+```bash
+sudo systemctl restart servo-us-server.service
+```
+
+Comprobar el correcto funcionamiento
+
+```bash
+sudo systemctl status servo-us-server.service
+```
+
+<figure><center>
+    <img src="../docs/images/troubleshooting/Server_arrancado.png" alt="[activating server: -2]" width="800">
+</center></figure>
+
+## 2.3. Error: No module named 'protocol'
+
+### Síntoma
+
+<figure><center>
+    <img src="../docs/images/troubleshooting/No-module-protocol.png" alt="[ModuleNotFoundError: No module named 'protocol']" width="800">
+</center></figure>
+
+### Causa
+
+El archivo `common/protocol.py` no puede localizarse desde `server/tcp_server.py`
+
+Esto suele ocurrir cuando:
+
+* Se ha movido `protocol.py` a otra carpeta.
+* Se ha eliminado o modificado el bloque `sys.path.append(...)`
+* La estructura del repositorio no coincide con la esperada.
+* Se ejecuta el script desde una ubicación incorrecta
+
+### Verificación
+
+Comprobar que el fichero existe
+
+```bash
+ls -l common/protocol.py
+```
+
+Comprobar que `tcp_server.py` contiene:
+
+```bash
+sys.path.append(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "common"
+    )
+)
+```
+
+Comprobar la estructura del repositorio
+
+```bash
+tree -L 2
+```
+
+Salida esperada
+
+```text
+servo-us-tcp-client/
+├── client/
+├── common/
+│   └── protocol.py
+├── server/
+│   ├── tcp_server.py
+│   └── us_rotating_sensor.py
+└── ...
+```
+
+### Solución
+
+Añadir o restaurar el bloque
+
+```bash
+sys.path.append(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "common"
+    )
+)
+```
+
+antes del `import`
+
+```bash
+from protocol import Request, Response, send_framed, recv_framed
+```
+
+Verificar posteriormente ejecutando
+
+```python
+python server/tcp_server.py
+```
+Si el problema está resuelto, el servidor debería continuar con la inicialización normal y mostrar:
+
+```text
+Servidor escuchando en ('0.0.0.0', 5050)
+```
+
 
 ## Error: No module named 'server'
 
