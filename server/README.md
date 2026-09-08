@@ -1,8 +1,8 @@
 # Server
 
-Servidor TCP para el control remotor de un sensor de ultrasonidos montado sobre un servomotor conectado a una Raspberry Pi.
+Servidor TCP para el control remoto de un sensor de ultrasonidos montado sobre un servomotor conectado a una Raspberry Pi.
 
-Este componente forma parte del proyecto `servo-us-tcp-client` y proporciona acceso remotor al hardware mediante una arquitectura cliente-servidor basada en TCP.
+Este componente forma parte del proyecto `servo-us-tcp-client` y proporciona acceso remoto al hardware mediante una arquitectura cliente-servidor basada en TCP.
 
 ## Objetivo
 
@@ -112,6 +112,59 @@ Salida esperada:
 Servidor escuchando en ('0.0.0.0', 5050)
 ```
 
+### Despliegue como servicio `systemd`
+
+Crear el fichero:
+
+```bash
+sudo nano /etc/systemd/system/servo-us-server.service
+```
+
+Contenido:
+
+```ini
+[Unit]
+Description=Servo Ultrasonic TCP Server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=create3_5
+WorkingDirectory=/home/create3_5/servo-us-tcp-client
+ExecStart=/home/create3_5/servo-us-tcp-client/.venv/bin/python3 -u /home/create3_5/servo-us-tcp-client/server/tcp_server.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+```
+
+Recargar `systemd`
+
+```bash
+sudo systemctl daemon-reload
+```
+
+Habilitar el servicio:
+
+```bash
+sudo systemctl enable servo-us-server.service
+```
+
+Iniciar el servicio:
+
+```bash
+sudo systemctl start servo-us-server.service
+```
+
+Verificar:
+
+```bash
+sudo systemctl status servo-us-server.service
+```
+
 ## Puerto utilizado
 
 Por defecto:
@@ -189,7 +242,7 @@ Comprobar:
 python server/tcp_server.py
 ```
 
-y revisar el mensaje de erro mostrado.
+y revisar el mensaje de error mostrado.
 
 ### El puerto 5050 no está disponible
 
