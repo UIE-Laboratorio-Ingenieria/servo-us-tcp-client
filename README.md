@@ -42,18 +42,19 @@ servo-us-tcp-client/
 ├── CONTRIBUTING.md
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
+├── config.example.ini
 │
 ├── examples/
 │   └── basic_scan.py
-│
+│   
 ├── client/
 │ ├── README.md
-│ └── RoombaExtensionClienteTCP.py
+│ └── tcp_client.py
 │
 ├── server/
 │ ├── README.md
-│ ├── RoombaExtensionServidorTCP.py
-│ └── LibRoombaExtensionConClases.py
+│ ├── tcp_server.py
+│ └── us_rotating_sensor.py
 │
 ├── common/
 │ └── protocol.py
@@ -77,7 +78,6 @@ servo-us-tcp-client/
 * Sensor ultrasónico HC-SR04 o compatible.
 * Servo de 180°.
 * Python 3.10 o superior.
-* Servicio pigpiod.
 
 #### Clonar el repositorio
 
@@ -107,7 +107,7 @@ La salida debe apuntar a la carpeta `.venv`
 
 ```bash
 pip install --upgrade pip
-pip install -r ClienteServidor/requirements.txt
+pip install -r server/requirements.txt
 ```
 
 #### Verificar la instalación de las dependencias
@@ -123,14 +123,55 @@ gpiozero OK
 pigpio OK
 ```
 
+### Configuración de la conexión
+
+Antes de utilizar el cliente es necesario crear un fichero de configuración a partir del ejemplo proporcionado.
+
+Copiar:
+
+```bash
+cp config.example.ini config.ini
+```
+
+Editar el nuevo fichero `config.ini`:
+
+```ini
+[server]
+host = xxx.xxx.xxx.xxx
+port = 5050
+```
+
+Donde:
+
+- `host` es la dirección IP de la Raspberry Pi que ejecuta el servidor
+- `port` es el puerto TCP utilizado por el servicio
+
+> **Importante:** el fichero `config.ini` no forma parte del repositorio y debe configurarse localmente en cada equipo cliente.
+
 ## 5. Quick Start
+
+### Configurar la conexión
+
+> Antes de ejecutar los ejemplos, asegúrese de haber configurado correctamente el fichero `config.ini`
+
+Crear una copia del archivo `config.example.ini` y configurarlo correctamente.
+
+```bash
+cp config.example.ini config.ini
+```
+
+```ini
+[server]
+host = xxx.xxx.xxx.xxx
+port = 5050
+```
 
 #### Uso local
 
 Crear una instancia de la clase `USRotatingSensor`, inicializar el hardware y realizar un barrido angular:
 
 ```python
-from LibRoombaExtensionConClases import USRotatingSensor
+from us_rotating_sensor import USRotatingSensor
 import asyncio
 
 async def main():
@@ -153,32 +194,10 @@ asyncio.run(main())
 #### Uso mediante TCP
 
 ```bash
-python RoombaExtensionServidorTCP.py
+python client/tcp_client.py
 ```
+El cliente se conectará automáticamente a la dirección IP y puerto definidos en el fichero de configuración.
 
-Desde cualquier equipo de la misma red utilizando el cliente:
-
-```python
-from RoombaExtensionClienteTCP import TCPClient
-import asyncio
-
-async def main():
-    async with TCPClient(
-        host="192.168.1.100",
-        port=5050
-    ) as client:
-
-        respuesta = await client.send_command(
-            "realizar_barrido",
-            {
-                "ang_inicio": 0,
-                "ang_fin": 180,
-                "salto_angulo": 20,
-            }
-        )
-        print(respuesta.result)
-asyncio.run(main())
-```
 #### Resultado esperado
 
 La librería devuelve dos listas:
@@ -327,7 +346,7 @@ Cuando se utiliza un bloque `with` esta limpieza se realiza automáticamente
 with USRotatingSensor() as sensor:
     sensor.setup()
 ```
-### 6.3. API TCP
+### 7.3. API TCP
 
 El servidor TCP permite acceder remotamente al hardware mediante comandos enviados en formato JSON
 
@@ -400,7 +419,7 @@ respuesta = await client.send_command(
 Obtener una lectura inmediata del sensor de ultrasonidos:
 
 ```python
-from LibRoombaExtensionConClases import USRotatingSensor
+from us_rotating_sensor import USRotatingSensor
 import asyncio
 
 async def main():
@@ -434,10 +453,10 @@ Salida típica:
 
 ### Lectura remota mediante TCP
 
-Obtener una distancia desde un cliente remoto conectdo al servidor:
+Obtener una distancia desde un cliente remoto conectado al servidor:
 
 ```python
-from LibRoombaExtensionConClases import USRotatingSensor
+from us_rotating_sensor import USRotatingSensor
 import asyncio
 
 async def main():
@@ -460,10 +479,10 @@ asyncio.run(main())
 
 ### Barrido remoto mediante TCP
 
-Realizar un barrido angular cumpleto desde un cliente remoto:
+Realizar un barrido angular completo desde un cliente remoto:
 
 ```python
-from RoombaExtensionClienteTCP import TCPClient
+from tcp_cient import TCPClient
 import asyncio
  
 async def main():
@@ -479,7 +498,7 @@ async def main():
                 "ang_inicio": 0,
                 "ang_fin": 180,
                 "salto_angulo": 20,
-                "retorno_final". True
+                "retorno_final": True
             }
         )
 
@@ -505,14 +524,14 @@ Al salir del bloque se ejecutará automáticamente el método `cleanup()`
 
 Antes de utilizar la librería, es importante tener en cuenta las siguientes limitaciones:
 
-* El acceso al hardware está diseñado para ejecutarse en una Raspberry Pi compatible con `GPIO Zero` y `pigpio`.
+* El acceso al hardware está diseñado para ejecutarse en una Raspberry Pi compatible con `GPIO Zero`.
 * La precisión de las medidas depende de las características y limitaciones propias del sensor de ultrasonidos utilizado.
 * Los materiales blandos, absorbentes, irregulares o con determinadas inclinaciones pueden producir lecturas imprecisas.
 * La distancia máxima efectiva está limitada por las características del sensor de ultrasonidos utilizado.
 * La velocidad de adquisición de datos depende del tiempo necesario para mover el servomotor entre posiciones y realizar las mediciones correspondientes.
 * En modo cliente-servidor, el rendimiento y la latencia dependen de la calidad de la conexión de red entre el cliente y la Raspberry Pi.
 * La librería está orientada principalmente a entornos educativos, prácticas de laboratorio y prototipado rápido, por lo que no ha sido diseñada para aplicaciones críticas o entornos industriales.
-* El acceso simultaneo de múltiples clientes al mismo dispositivo puede requerir mecanismos adicionales de coordinación en función del escenario de uso.
+* El acceso simultáneo de múltiples clientes al mismo dispositivo puede requerir mecanismos adicionales de coordinación en función del escenario de uso.
 
 
 ## 10. Licencia
