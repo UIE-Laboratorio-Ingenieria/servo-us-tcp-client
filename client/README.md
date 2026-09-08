@@ -8,7 +8,7 @@ El cliente implementa una interfaz sencilla basada en Python asíncrono y oculta
 
 * Python 3.10 o superior.
 * Conectividad de red con la Raspberry Pi que ejecuta el servidor.
-* Acceso al puerto TCP configurado en el servidor (por defecto:: `5050`).
+* Acceso al puerto TCP configurado en el servidor (por defecto: `5050`).
 
 ## Estructura
 
@@ -30,7 +30,7 @@ async def main():
         port=5050
     ) as client:
 
-        print ("Conectado")
+        print("Conectado")
 
 asyncio.run(main())
 ```
@@ -135,6 +135,7 @@ Ejemplo de respuesta:
 ### Error de conexión
 
 Si aparece:
+
 ```text
 ConnectionRefusedError
 ```
