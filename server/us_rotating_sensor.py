@@ -131,7 +131,8 @@ class USRotatingSensor:
                                     pin_factory=self.factory)
             # Inicializamos el servo a la posición 0 grados y guardamos esta posición como última conocida
             self.servo.angle    = 0
-            self.servo_last_pos = 0  
+            self.servo_last_pos = 0
+            self.servo.detach()   # Con el nuevo servo de DFRobot, necesitamos desconectar el PWM en el setup para que no se produzcan microtemblores.  
         except Exception as e:
             self.logea(f"USRotatingSensor.setup: ✗ ERROR crítico en inicialización: {e}")
             raise RuntimeError(f"USRotatingSensor.setup: Fallo en inicialización de hardware: {e}")            
@@ -161,7 +162,8 @@ class USRotatingSensor:
             self.servo_last_pos = angle
 
             await asyncio.sleep(pausa)
-            #self.servo.detach() #se ha quitado porque con los servos pequeños, durante el barrido hacía movimientos extraños
+            self.servo.detach() #se ha quitado porque con los servos pequeños, durante el barrido hacía movimientos extraños
+                                # PTARRIO -> descomento para solucionar microtemblores.
         except asyncio.CancelledError:
             # Limpieza del servo al cancelar
             self.servo.detach()  # o self.servo.mid(), según prefieras

@@ -36,7 +36,7 @@ async def main():
                 '''            
                 await asyncio.sleep(0.9)
         except KeyboardInterrupt:
-            print("\n🛑 Saliendo...")
+            print("\nSaliendo...")
     # ← hw.cleanup() se llama automáticamente aquí
 
 
