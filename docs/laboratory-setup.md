@@ -290,3 +290,17 @@ Salida esperada:
 - [ ] Servicio systemd instalado.
 - [ ] Servicio arranca automáticamente tras reinicio.
 - [ ] Servicio `servo-us-server.service` en estado `active (running)`.
+
+
+## Red Ethernet de mantenimiento
+
+Se configura la interfaz Ethernet de la Raspberry Pi con la dirección:
+
+192.168.50.1/24
+
+Esta interfaz proporciona un canal de administración independiente de la red WiFi y permite recuperar el acceso al sistema incluso si la configuración inalámbrica resulta incorrecta.
+
+Para acceder a la Raspberry Pi a través de esta interfaz es necesario configurar manualmente una dirección IP en el ordenador cliente dentro de la misma subred, por ejemplo:
+
+- Raspberry Pi: 192.168.50.1/24
+- Ordenador:    192.168.50.2/24
