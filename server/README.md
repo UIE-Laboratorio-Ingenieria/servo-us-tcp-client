@@ -77,6 +77,8 @@ pip install -r server/requirements.txt
 | Control PWM | GPIO 18 |
 | VCC | 5V |
 | GND | GND |
+
+La señal PWM es liberada tras cada movimiento para evitar microtemblores observados en determinados servomotores de alto par.
  
 ## Arquitectura
 
