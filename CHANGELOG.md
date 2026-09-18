@@ -28,6 +28,8 @@ Este proyecto sigue las recomendaciones de [Keep a Changelog](https://keepachang
 
 - Refactorización de nombres internos para mejorar la legibilidad del código.
 - Mejora de comentarios y documentación interna.
+- Added `servo.detach()` after initialization and servo movements.
+- Eliminated idle micro-jitter observed with DFRobot 2Kg 180° Clutch Servo.
 
 ### Fixed
 
