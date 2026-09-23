@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "servo-us-tcp-client"
+version = "1.0.0"
+description = "Python TCP client library for servo and ultrasonic sensor on Raspberry Pi"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "Pablo M. Tarrio Guirao", email = "pablo.tarrio@uie.edu"}
+]
+requires-python = ">=3.10"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

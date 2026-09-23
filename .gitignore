@@ -3,3 +3,13 @@ __pycache__/
 *.pyc
 .vscode/
 config.ini
+
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+ 
+# Python
+__pycache__/
+*.pyc
