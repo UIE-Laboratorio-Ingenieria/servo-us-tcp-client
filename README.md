@@ -1,5 +1,10 @@
 # servo-us-tcp-client
 
+[![PyPI](https://img.shields.io/pypi/v/servo-us-tcp-client.svg)](https://roject/servo-us-tcp-client/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/servo-us-tcp-client.svg)](https://pypistats.org/packages/servo-us-tcp-client//img.shields.io/pypi/l/servo-us-tcp-client.svg)](https://pypi.ervo-us-tcp-client/)
+[![Python](https://img.shields.io/pypi/pyversions/servo-us-tcp-client.//pypi.org/project/servo-us-tcp-client/)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://uff)
+
 ## 1. Objetivo
 
 Proporcionar una forma sencilla y directa de controlar remotamente un sensor ultrasónico montado sobre un servomotor y conectado a una Raspberry Pi, permitiendo realizar mediciones de distancia y barridos angulares desde aplicaciones Python.
